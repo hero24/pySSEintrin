@@ -14,11 +14,30 @@
 
 /** TODO:
  * Windows support seems to be broken. Could be my fault.
- * basei32 && pyobj_basei32
  * basei64 && pyobj_basei64
  * and_si128 -> 32 && 64 int data
  * andnot_si128 -> 32 && 64 int data
  */
+
+/* Base 32bit int */
+static inline __m128i *sse_basei32(PyObject *self, PyObject *args)
+{
+    int32_t aa[4], ab[4];
+    __m128i *n = malloc(sizeof(__m128i)*N_RET_SZ);
+    if(!PyArg_ParseTuple(args, "iiiiiiii", A03(&aa), A03(&ab))){
+        return NULL;
+    }
+    n[0] = _mm_set_epi32(A03(aa));
+    n[1] = _mm_set_epi32(A03(ab));
+    return n;
+}
+
+static inline PyObject *sse_pyobj_basei32(__m128i *r, __m128i *n)
+{
+    PyObject *obj = Py_BuildValue("[iiii]", A03(ar));
+    free(n);
+    return obj;
+}
 
 /* Base 16bit int */
 static inline __m128i *sse_basei16(PyObject *self, PyObject *args)
@@ -67,48 +86,29 @@ static inline PyObject *sse_pyobj_basei8(__m128i *r, __m128i *n)
 /* Add */
 static PyObject *sse_addepi8(PyObject *self, PyObject *args)
 {
-    int8_t aa[16], ab[16];
-    int8_t *ar;
-    __m128i n, a, b;
-    if(!PyArg_ParseTuple(args, "iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii",
-                                A03(&aa), A47(&aa), A811(&aa), A1216(&aa),
-                                A03(&ab), A47(&ab), A811(&ab), A1216(&ab))){
-         return NULL;
-    }
-    a = _mm_set_epi8(A03(aa), A47(aa), A811(aa), A1216(aa)); 
-    b = _mm_set_epi8(A03(ab), A47(ab), A811(ab), A1216(ab));
-    n = _mm_add_epi8(a, b);
-    ar = (int8_t *) &n;
-    return Py_BuildValue("[iiiiiiiiiiiiiiii]", A03(ar), A47(ar), A811(ar), A1216(ar));
+    __m128i r, *n = sse_basei8(self, args);
+    if (!n)
+        return NULL;
+    r = _mm_add_epi8(n[0], n[1]);
+    return sse_pyobj_basei8(&r, n);
 }
 
 static PyObject *sse_addepi16(PyObject *self, PyObject *args)
 {
-    int16_t *ar, aa[8], ab[8];
-    __m128i n, a ,b;
-    if(!PyArg_ParseTuple(args, "iiiiiiiiiiiiiiii", A03(&aa), A47(&aa), A03(&ab), A47(&ab))){
+    __m128i r, *n = sse_basei16(self, args);
+    if(!n)
         return NULL;
-    }
-    a = _mm_set_epi16(A03(aa), A47(aa));
-    b = _mm_set_epi16(A03(ab), A47(ab));
-    n = _mm_add_epi16(a, b);
-    ar = (int16_t *) &n;
-    return Py_BuildValue("[iiiiiiii]", A03(ar), A47(ar));
+    r = _mm_add_epi16(n[0], n[1]);
+    return sse_pyobj_basei16(&r, n);
 }
 
 static PyObject *sse_addepi32(PyObject *self, PyObject *args)
 {
-    int32_t aa[4], ab[4]; 
-    int32_t *ar;
-    __m128i n, a ,b;
-    if(!PyArg_ParseTuple(args, "iiiiiiii", A03(&aa), A03(&ab))){
+    __m128i r, *n = sse_basei32(self, args);
+    if(!n)
         return NULL;
-    }
-    a = _mm_set_epi32(A03(aa));
-    b = _mm_set_epi32(A03(ab));
-    n = _mm_add_epi32(a, b);
-    ar = (int32_t *) &n;
-    return Py_BuildValue("[iiii]", A03(ar));
+    r = _mm_add_epi32(n[0], n[1]);
+    return sse_pyobj_basei32(&r, n);
 }
 
 static PyObject *sse_addepi64(PyObject *self, PyObject *args)
