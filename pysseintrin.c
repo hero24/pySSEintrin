@@ -1,3 +1,4 @@
+#include <xmmintrin.h>
 #include <emmintrin.h>
 #include <stdint.h>
 #include <Python.h>
@@ -10,6 +11,14 @@
 #define A47(a) ADSE(a, 4)
 #define A811(a) ADSE(a,8)
 #define A1216(a) ADSE(a, 12)
+
+/** TODO:
+ * Windows support seems to be broken. Could be my fault.
+ * basei32 && pyobj_basei32
+ * basei64 && pyobj_basei64
+ * and_si128 -> 32 && 64 int data
+ * andnot_si128 -> 32 && 64 int data
+ */
 
 /* Base 16bit int */
 static inline __m128i *sse_basei16(PyObject *self, PyObject *args)
@@ -117,6 +126,45 @@ static PyObject *sse_addepi64(PyObject *self, PyObject *args)
     return Py_BuildValue("[ll]", ASE(ar, 0));
 }
 
+#ifndef _WIN32
+/* and_si128 */
+static PyObject *sse_and_si128_16(PyObject *self, PyObject *args)
+{
+    __m128i r, *n = sse_basei16(self, args);
+    if (n == NULL)
+        return NULL;
+    r = _mm_and_si128(n[0], n[1]);
+    return sse_pyobj_basei16(&r, n);
+}
+
+static PyObject *sse_and_si128_8(PyObject *self, PyObject *args)
+{
+    __m128i r, *n = sse_basei8(self, args);
+    if (n == NULL)
+        return NULL;
+    r = _mm_and_si128(n[0], n[1]);
+    return sse_pyobj_basei8(&r, n);
+}
+
+/* andnot_si128 */
+static PyObject *sse_andnot_si128_16(PyObject *self, PyObject *args)
+{
+    __m128i r, *n = sse_basei16(self, args);
+    if (!n)
+        return NULL;
+    r = _mm_andnot_si128(n[0], n[1]);
+    return sse_pyobj_basei16(&r, n);
+}
+
+static PyObject *sse_andnot_si128_8(PyObject *self, PyObject *args)
+{
+    __m128i r, *n = sse_basei8(self, args);
+    if (!n)
+        return NULL;
+    r = _mm_andnot_si128(n[0], n[1]);
+    return sse_pyobj_basei8(&r, n);
+}
+#endif
 /* Average */
 static PyObject *sse_avgepu16(PyObject *self, PyObject *args)
 {
@@ -127,6 +175,37 @@ static PyObject *sse_avgepu16(PyObject *self, PyObject *args)
     return sse_pyobj_basei16(&r, n);
 
 }
+
+#ifndef _WIN32
+static PyObject *sse_avgpu16(PyObject *self, PyObject *args)
+{
+    /* WARNING: Seems to be crashing on windows */
+    int16_t aa[4], ab[4], *ar;
+    __m64 a, b, r;
+    if(!PyArg_ParseTuple(args, "iiiiiiii", A03(&aa), A03(&ab)))
+        return NULL;
+    a = _mm_set_pi16(A03(aa));
+    b = _mm_set_pi16(A03(ab));
+    r = _mm_avg_pu16(a, b);
+    ar = (int16_t *) &r;
+    _mm_empty();
+    return Py_BuildValue("[iiii]", A03(ar));
+}
+
+static PyObject *sse_avgpu8(PyObject *self, PyObject *args)
+{
+    int8_t aa[8], ab[8], *ar;
+    __m64 a, b, r;
+    if(!PyArg_ParseTuple(args, "iiiiiiiiiiiiiiii", A03(&aa), A47(&aa), A03(&ab), A47(&ab)))
+        return NULL;
+    a = _mm_set_pi8(A03(aa), A47(aa));
+    b = _mm_set_pi8(A03(ab), A47(ab));
+    r = _mm_avg_pu8(a, b);
+    ar = (int8_t *) &r;
+    _mm_empty();
+    return Py_BuildValue("[iiiiiiii]", A03(ar), A47(ar));
+}
+#endif
 
 static PyObject *sse_avgepu8(PyObject *self, PyObject *args)
 {
@@ -160,6 +239,14 @@ static PyObject *sse_cmpeqepi8(PyObject *self, PyObject *args)
 static PyMethodDef SSEMethods[] = {
     {"cmpeq_epi16", sse_cmpeqepi16, METH_VARARGS, "Compare packed 16-bit integers in a and b for equality"},
     {"cmpeq_epi8", sse_cmpeqepi8, METH_VARARGS, "Compare packed 8-bit integers in a and b for equality"},
+#ifndef _WIN32
+    {"andnot_si128_16i", sse_andnot_si128_16, METH_VARARGS, "Compute bitwise NOT of 128 bits representing 16bit integer data"},
+    {"andnot_si128_8i", sse_andnot_si128_8, METH_VARARGS, "Compute bitwise NOT of 128 bits representing 8bit integer data"},    
+    {"and_si128_16i", sse_and_si128_16, METH_VARARGS, "Compute the bitwise AND of 128 bits representing 16bit integer data in a and b"},
+    {"and_si128_8i", sse_and_si128_8, METH_VARARGS, "Compute the bitwise AND of 128 bits representing 8bit integer data in a and b"},
+    {"avg_pu16", sse_avgpu16, METH_VARARGS, "Average packed unsigned 16bit integers in a and b"},
+    {"avg_pu8", sse_avgpu8, METH_VARARGS, "Average packed unsigned 8bit integers in a and b"},
+#endif
     {"avg_epu16", sse_avgepu16, METH_VARARGS, "Average packed unsigned 16bit integers in a and b"},
     {"avg_epu8",  sse_avgepu8,  METH_VARARGS, "Average packed unsigned 8bit integers in a and b"},
     {"add_epi64", sse_addepi64, METH_VARARGS, "Add packed 64-bit integers in a and b"},
@@ -177,6 +264,6 @@ static struct PyModuleDef ssemodule = {
     SSEMethods
 };
 
-PyMODINIT_FUNC PyInit_sseintrin(void){
+PyMODINIT_FUNC PyInit_pysseintrin(void){
     return PyModule_Create(&ssemodule);
 }
