@@ -34,6 +34,7 @@ static inline __m128i *sse_basei32(PyObject *self, PyObject *args)
 
 static inline PyObject *sse_pyobj_basei32(__m128i *r, __m128i *n)
 {
+    int32_t *ar = (int32_t *) r;
     PyObject *obj = Py_BuildValue("[iiii]", A03(ar));
     free(n);
     return obj;
