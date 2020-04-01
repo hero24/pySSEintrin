@@ -12,11 +12,23 @@
 #define A811(a) ADSE(a,8)
 #define A1216(a) ADSE(a, 12)
 
+#define BASE(base, pyobj, intrinsic) \
+    __m128i r, *n = base(self, args);\
+    if(n == NULL)                    \
+        return NULL;                 \
+    r = intrinsic(n[0], n[1]);       \
+    return pyobj(&r, n); 
+
+#define BASE8(intrinsic) BASE(sse_basei8, sse_pyobj_basei8, intrinsic)
+#define BASE16(intrinsic) BASE(sse_basei16, sse_pyobj_basei16, intrinsic)
+#define BASE32(intrinsic) BASE(sse_basei32, sse_pyobj_basei32, intrinsic)
+
 /** TODO:
  * Windows support seems to be broken. Could be my fault.
  * basei64 && pyobj_basei64
- * and_si128 -> 32 && 64 int data
- * andnot_si128 -> 32 && 64 int data
+ * and_si128 -> 64 int data
+ * andnot_si128 -> 64 int data
+ * 64bit sub.
  */
 
 /* Base 32bit int */
@@ -87,29 +99,17 @@ static inline PyObject *sse_pyobj_basei8(__m128i *r, __m128i *n)
 /* Add */
 static PyObject *sse_addepi8(PyObject *self, PyObject *args)
 {
-    __m128i r, *n = sse_basei8(self, args);
-    if (!n)
-        return NULL;
-    r = _mm_add_epi8(n[0], n[1]);
-    return sse_pyobj_basei8(&r, n);
+    BASE8(_mm_add_epi8)
 }
 
 static PyObject *sse_addepi16(PyObject *self, PyObject *args)
 {
-    __m128i r, *n = sse_basei16(self, args);
-    if(!n)
-        return NULL;
-    r = _mm_add_epi16(n[0], n[1]);
-    return sse_pyobj_basei16(&r, n);
+    BASE16(_mm_add_epi16)
 }
 
 static PyObject *sse_addepi32(PyObject *self, PyObject *args)
 {
-    __m128i r, *n = sse_basei32(self, args);
-    if(!n)
-        return NULL;
-    r = _mm_add_epi32(n[0], n[1]);
-    return sse_pyobj_basei32(&r, n);
+    BASE32(_mm_add_epi32)
 }
 
 static PyObject *sse_addepi64(PyObject *self, PyObject *args)
@@ -129,52 +129,41 @@ static PyObject *sse_addepi64(PyObject *self, PyObject *args)
 
 #ifndef _WIN32
 /* and_si128 */
+static PyObject *sse_and_si128_32(PyObject *self, PyObject *args)
+{
+    BASE32(_mm_and_si128)
+}
+
 static PyObject *sse_and_si128_16(PyObject *self, PyObject *args)
 {
-    __m128i r, *n = sse_basei16(self, args);
-    if (n == NULL)
-        return NULL;
-    r = _mm_and_si128(n[0], n[1]);
-    return sse_pyobj_basei16(&r, n);
+    BASE16(_mm_and_si128)
 }
 
 static PyObject *sse_and_si128_8(PyObject *self, PyObject *args)
 {
-    __m128i r, *n = sse_basei8(self, args);
-    if (n == NULL)
-        return NULL;
-    r = _mm_and_si128(n[0], n[1]);
-    return sse_pyobj_basei8(&r, n);
+    BASE8(_mm_and_si128)
 }
 
 /* andnot_si128 */
+static PyObject *sse_andnot_si128_32(PyObject *self, PyObject *args)
+{
+    BASE32(_mm_andnot_si128)
+}
+
 static PyObject *sse_andnot_si128_16(PyObject *self, PyObject *args)
 {
-    __m128i r, *n = sse_basei16(self, args);
-    if (!n)
-        return NULL;
-    r = _mm_andnot_si128(n[0], n[1]);
-    return sse_pyobj_basei16(&r, n);
+    BASE16(_mm_andnot_si128)
 }
 
 static PyObject *sse_andnot_si128_8(PyObject *self, PyObject *args)
 {
-    __m128i r, *n = sse_basei8(self, args);
-    if (!n)
-        return NULL;
-    r = _mm_andnot_si128(n[0], n[1]);
-    return sse_pyobj_basei8(&r, n);
+    BASE8(_mm_andnot_si128)
 }
 #endif
 /* Average */
 static PyObject *sse_avgepu16(PyObject *self, PyObject *args)
 {
-    __m128i r, *n = sse_basei16(self, args);
-    if(n == NULL)
-        return NULL;
-    r = _mm_avg_epu16(n[0], n[1]);
-    return sse_pyobj_basei16(&r, n);
-
+    BASE16(_mm_avg_epu16)
 }
 
 #ifndef _WIN32
@@ -210,39 +199,91 @@ static PyObject *sse_avgpu8(PyObject *self, PyObject *args)
 
 static PyObject *sse_avgepu8(PyObject *self, PyObject *args)
 {
-    __m128i r, *n = sse_basei8(self, args);
-    if (n == NULL)
-        return NULL;
-    r = _mm_avg_epu8(n[0], n[1]);
-    return sse_pyobj_basei8(&r, n);
+    BASE8(_mm_avg_epu8)
 }
 
 /* Compare Equal */
+static PyObject *sse_cmpeqepi32(PyObject *self, PyObject *args)
+{
+    BASE32(_mm_cmpeq_epi32)
+}
 
 static PyObject *sse_cmpeqepi16(PyObject *self, PyObject *args)
 {
-    __m128i r, *n = sse_basei16(self, args);
-    if(n == NULL)
-        return NULL;
-    r = _mm_cmpeq_epi16(n[0], n[1]);
-    return sse_pyobj_basei16(&r, n);
+    BASE16(_mm_cmpeq_epi16)
 }
 
 static PyObject *sse_cmpeqepi8(PyObject *self, PyObject *args)
 {
-    __m128i r, *n = sse_basei8(self, args);
-    if (n == NULL)
-        return NULL;
-    r = _mm_cmpeq_epi8(n[0], n[1]);
-    return sse_pyobj_basei8(&r, n);
+    BASE8(_mm_cmpeq_epi8)
+}
+
+/* Compare greater than */
+static PyObject *sse_cmpgtepi32(PyObject *self, PyObject *args)
+{
+    BASE32(_mm_cmpgt_epi32)
+}
+
+static PyObject *sse_cmpgtepi16(PyObject *self, PyObject *args)
+{
+    BASE16(_mm_cmpgt_epi16) 
+}
+
+static PyObject *sse_cmpgtepi8(PyObject *self, PyObject *args)
+{
+    BASE8(_mm_cmpgt_epi8)    
+}
+
+/* Compare less than */
+static PyObject *sse_cmpltepi32(PyObject *self, PyObject *args)
+{
+    BASE32(_mm_cmplt_epi32)
+}
+
+static PyObject *sse_cmpltepi16(PyObject *self, PyObject *args)
+{
+    BASE16(_mm_cmplt_epi16) 
+}
+
+static PyObject *sse_cmpltepi8(PyObject *self, PyObject *args)
+{
+    BASE8(_mm_cmplt_epi8)    
+}
+
+/* Subtract */
+static PyObject *sse_subepi32(PyObject *self, PyObject *args)
+{
+    BASE32(_mm_sub_epi32)
+}
+
+static PyObject *sse_subepi16(PyObject *self, PyObject *args)
+{
+    BASE16(_mm_sub_epi16) 
+}
+
+static PyObject *sse_subepi8(PyObject *self, PyObject *args)
+{
+    BASE8(_mm_sub_epi8)    
 }
 
 static PyMethodDef SSEMethods[] = {
+    {"sub_epi32", sse_subepi32, METH_VARARGS, "Subtract packed 32-bit integers in a and b"},
+    {"sub_epi16", sse_subepi16, METH_VARARGS, "Subtract packed 16-bit integers in a and b"},
+    {"sub_epi8", sse_subepi8, METH_VARARGS, "Subtract packed 8-bit integers in a and b"},
+    {"cmplt_epi32", sse_cmpltepi32, METH_VARARGS, "Compare packed 32-bit integers in a and b for less than"},
+    {"cmplt_epi16", sse_cmpltepi16, METH_VARARGS, "Compare packed 16-bit integers in a and b for less than"},
+    {"cmplt_epi8", sse_cmpltepi8, METH_VARARGS, "Compare packed 8-bit integers in a and b for less than"},
+    {"cmpgt_epi32", sse_cmpgtepi32, METH_VARARGS, "Compare packed 32-bit integers in a and b for greater than"},
+    {"cmpgt_epi16", sse_cmpgtepi16, METH_VARARGS, "Compare packed 16-bit integers in a and b for greater than"},
+    {"cmpgt_epi8", sse_cmpgtepi8, METH_VARARGS, "Compare packed 8-bit integers in a and b for greater than"},
+    {"cmpeq_epi32", sse_cmpeqepi32, METH_VARARGS, "Compare packed 32-bit integers in a and b for equality"},
     {"cmpeq_epi16", sse_cmpeqepi16, METH_VARARGS, "Compare packed 16-bit integers in a and b for equality"},
     {"cmpeq_epi8", sse_cmpeqepi8, METH_VARARGS, "Compare packed 8-bit integers in a and b for equality"},
 #ifndef _WIN32
+    {"andnot_si128_32i", sse_andnot_si128_32, METH_VARARGS, "Compute bitwise NOT of 128 bits representing 32bit integer data"},
     {"andnot_si128_16i", sse_andnot_si128_16, METH_VARARGS, "Compute bitwise NOT of 128 bits representing 16bit integer data"},
     {"andnot_si128_8i", sse_andnot_si128_8, METH_VARARGS, "Compute bitwise NOT of 128 bits representing 8bit integer data"},    
+    {"and_si128_32i", sse_and_si128_32, METH_VARARGS, "Compute the bitwise AND of 128 bits representing 32bit integer data in a and b"},
     {"and_si128_16i", sse_and_si128_16, METH_VARARGS, "Compute the bitwise AND of 128 bits representing 16bit integer data in a and b"},
     {"and_si128_8i", sse_and_si128_8, METH_VARARGS, "Compute the bitwise AND of 128 bits representing 8bit integer data in a and b"},
     {"avg_pu16", sse_avgpu16, METH_VARARGS, "Average packed unsigned 16bit integers in a and b"},
