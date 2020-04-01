@@ -23,12 +23,22 @@
 #define BASE16(intrinsic) BASE(sse_basei16, sse_pyobj_basei16, intrinsic)
 #define BASE32(intrinsic) BASE(sse_basei32, sse_pyobj_basei32, intrinsic)
 
+#define BASE64(intrinsic)                                            \
+    int64_t aa[2], ab[2];                                             \
+    int64_t *ar;                                                      \
+    __m128i n, a ,b;                                                  \
+    if(!PyArg_ParseTuple(args, "llll", ASE(&aa, 0), ASE(&ab, 0))){    \
+        return NULL;                                                  \
+    }                                                                 \
+    a = _mm_set_epi64x(ASE(aa, 0));                                   \
+    b = _mm_set_epi64x(ASE(ab, 0));                                   \
+    n = intrinsic(a, b);                                              \
+    ar = (int64_t *) &n;                                              \
+    return Py_BuildValue("[ll]", ASE(ar, 0));
+
 /** TODO:
  * Windows support seems to be broken. Could be my fault.
- * basei64 && pyobj_basei64
- * and_si128 -> 64 int data
- * andnot_si128 -> 64 int data
- * 64bit sub.
+ * Adds epu needs validation of unsigned ints
  */
 
 /* Base 32bit int */
@@ -114,21 +124,38 @@ static PyObject *sse_addepi32(PyObject *self, PyObject *args)
 
 static PyObject *sse_addepi64(PyObject *self, PyObject *args)
 {
-    int64_t aa[2], ab[2]; 
-    int64_t *ar;
-    __m128i n, a ,b;
-    if(!PyArg_ParseTuple(args, "llll", ASE(&aa, 0), ASE(&ab, 0))){
-        return NULL;
-    }
-    a = _mm_set_epi64x(ASE(aa, 0));
-    b = _mm_set_epi64x(ASE(ab, 0));
-    n = _mm_add_epi64(a, b);
-    ar = (int64_t *) &n;
-    return Py_BuildValue("[ll]", ASE(ar, 0));
+    BASE64(_mm_add_epi64)
+}
+
+/* Adds epi*/
+static PyObject *sse_addsepi8(PyObject *self, PyObject *args)
+{
+    BASE8(_mm_adds_epi8)
+}
+
+static PyObject *sse_addsepi16(PyObject *self, PyObject *args)
+{
+    BASE16(_mm_adds_epi16)
+}
+
+/* Adds epu */
+static PyObject *sse_addsepu8(PyObject *self, PyObject *args)
+{
+    BASE8(_mm_adds_epu8)
+}
+
+static PyObject *sse_addsepu16(PyObject *self, PyObject *args)
+{
+    BASE16(_mm_adds_epu16)
 }
 
 #ifndef _WIN32
 /* and_si128 */
+static PyObject *sse_and_si128_64(PyObject *self, PyObject *args)
+{
+    BASE64(_mm_and_si128)
+}
+
 static PyObject *sse_and_si128_32(PyObject *self, PyObject *args)
 {
     BASE32(_mm_and_si128)
@@ -145,6 +172,11 @@ static PyObject *sse_and_si128_8(PyObject *self, PyObject *args)
 }
 
 /* andnot_si128 */
+static PyObject *sse_andnot_si128_64(PyObject *self, PyObject *args)
+{
+    BASE64(_mm_andnot_si128)
+}
+
 static PyObject *sse_andnot_si128_32(PyObject *self, PyObject *args)
 {
     BASE32(_mm_andnot_si128)
@@ -251,6 +283,11 @@ static PyObject *sse_cmpltepi8(PyObject *self, PyObject *args)
 }
 
 /* Subtract */
+static PyObject *sse_subepi64(PyObject *self, PyObject *args)
+{
+    BASE64(_mm_sub_epi64)
+}
+
 static PyObject *sse_subepi32(PyObject *self, PyObject *args)
 {
     BASE32(_mm_sub_epi32)
@@ -266,7 +303,39 @@ static PyObject *sse_subepi8(PyObject *self, PyObject *args)
     BASE8(_mm_sub_epi8)    
 }
 
+/* si64 */
+#ifndef _WIN32
+static PyObject *sse_addsi64(PyObject *self, PyObject *args)
+{
+    int64_t x, y;
+    if (!PyArg_ParseTuple(args, "ll", &x, &y))
+        return NULL;
+    __m64 a = (__m64) x, b = (__m64) y, r;
+    r = _mm_add_si64(a,b);
+    return Py_BuildValue("l", (int64_t) r);
+}
+
+static PyObject *sse_subsi64(PyObject *self, PyObject *args)
+{
+    int64_t x, y;
+    if (!PyArg_ParseTuple(args, "ll", &x, &y))
+        return NULL;
+    __m64 a = (__m64) x, b = (__m64) y, r;
+    r = _mm_sub_si64(a,b);
+    return Py_BuildValue("l", (int64_t) r);
+}
+#endif
+
 static PyMethodDef SSEMethods[] = {
+    {"adds_epu8", sse_addsepu8, METH_VARARGS, "Adds 8-bit unsigned integers using saturation"},
+    {"adds_epu16", sse_addsepu16, METH_VARARGS, "Adds 16-bit unsigned integers using saturation"},
+    {"adds_epi8", sse_addsepi8, METH_VARARGS, "Adds 8-bit integers using saturation"},
+    {"adds_epi16", sse_addsepi16, METH_VARARGS, "Adds 16-bit integers using saturation"},
+#ifndef _WIN32
+    {"sub_si64", sse_subsi64, METH_VARARGS, "Subtract 64-bit integers a and b"},
+    {"add_si64", sse_addsi64, METH_VARARGS, "Add 64-bit integers a and b"},
+#endif
+    {"sub_epi64", sse_subepi64, METH_VARARGS, "Subtract packed 64-bit integers in a and b"},
     {"sub_epi32", sse_subepi32, METH_VARARGS, "Subtract packed 32-bit integers in a and b"},
     {"sub_epi16", sse_subepi16, METH_VARARGS, "Subtract packed 16-bit integers in a and b"},
     {"sub_epi8", sse_subepi8, METH_VARARGS, "Subtract packed 8-bit integers in a and b"},
@@ -280,9 +349,11 @@ static PyMethodDef SSEMethods[] = {
     {"cmpeq_epi16", sse_cmpeqepi16, METH_VARARGS, "Compare packed 16-bit integers in a and b for equality"},
     {"cmpeq_epi8", sse_cmpeqepi8, METH_VARARGS, "Compare packed 8-bit integers in a and b for equality"},
 #ifndef _WIN32
+    {"andnot_si128_64i", sse_andnot_si128_64, METH_VARARGS, "Compute bitwise NOT of 128 bits representing 64bit integer data"},
     {"andnot_si128_32i", sse_andnot_si128_32, METH_VARARGS, "Compute bitwise NOT of 128 bits representing 32bit integer data"},
     {"andnot_si128_16i", sse_andnot_si128_16, METH_VARARGS, "Compute bitwise NOT of 128 bits representing 16bit integer data"},
-    {"andnot_si128_8i", sse_andnot_si128_8, METH_VARARGS, "Compute bitwise NOT of 128 bits representing 8bit integer data"},    
+    {"andnot_si128_8i", sse_andnot_si128_8, METH_VARARGS, "Compute bitwise NOT of 128 bits representing 8bit integer data"},
+    {"and_si128_64i", sse_and_si128_64, METH_VARARGS, "Compute the bitwise AND of 128 bits representing 64bit integer data in a and b"},
     {"and_si128_32i", sse_and_si128_32, METH_VARARGS, "Compute the bitwise AND of 128 bits representing 32bit integer data in a and b"},
     {"and_si128_16i", sse_and_si128_16, METH_VARARGS, "Compute the bitwise AND of 128 bits representing 16bit integer data in a and b"},
     {"and_si128_8i", sse_and_si128_8, METH_VARARGS, "Compute the bitwise AND of 128 bits representing 8bit integer data in a and b"},
