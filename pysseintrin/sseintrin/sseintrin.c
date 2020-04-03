@@ -1,7 +1,6 @@
 #include <stdint.h>
 #include <Python.h>
-#include "pysseintrin.h"
-
+#include "sseintrin.h"
  
 /** TODO:
  * Windows support seems to be broken. Could be my fault.
@@ -274,50 +273,6 @@ static PyObject *sse_shuffle_pi16(PyObject *self, PyObject *args)
     return Py_BuildValue("[iiii]", A03(ar));
 }
 
-/* MXCSR control regiser functions */
-#define MXCSR_CTRL_BASE(CTRL)  unsigned int mode;                      \
-                               if(!PyArg_ParseTuple(args, "i", &mode)) \
-                                        return NULL;                   \
-                               CTRL(mode);                             \
-                               Py_RETURN_NONE;
-
-static PyObject *sse_setcsr(PyObject *self, PyObject *args)
-{
-    MXCSR_CTRL_BASE(_mm_setcsr)
-}
-
-static PyObject *sse_set_rnd_mode(PyObject *self, PyObject *args)
-{
-    /*
-    _MM_ROUND_NEAREST, _MM_ROUND_DOWN, _MM_ROUND_UP, _MM_ROUND_TOWARD_ZERO
-    */
-    MXCSR_CTRL_BASE(_MM_SET_ROUNDING_MODE)
-}
-
-static PyObject *sse_csfr_sfzm(PyObject *self, PyObject *args)
-{    
-    /* _MM_FLUSH_ZERO_ON, _MM_FLUSH_ZERO_OFF */
-    MXCSR_CTRL_BASE(_MM_SET_FLUSH_ZERO_MODE)
-}
-
-static PyObject *sse_csfr_sexcst(PyObject *self, PyObject *args)
-{
-    /* 
-    _MM_EXCEPT_INVALID, _MM_EXCEPT_DIV_ZERO, _MM_EXCEPT_DENORM,
-    _MM_EXCEPT_OVERFLOW, _MM_EXCEPT_UNDERFLOW, _MM_EXCEPT_INEXACT
-    */
-    MXCSR_CTRL_BASE(_MM_SET_EXCEPTION_STATE)
-}
-
-static PyObject *sse_csfr_sexcmsk(PyObject *self, PyObject *args)
-{
-    /*
-    _MM_MASK_INVALID, _MM_MASK_DIV_ZERO, _MM_MASK_DENORM,
-    _MM_MASK_OVERFLOW, _MM_MASK_UNDERFLOW, _MM_MASK_INEXACT
-    */
-    MXCSR_CTRL_BASE(_MM_SET_EXCEPTION_MASK)
-}
-
 /* mathematical functions pd */
 static PyObject *sse_sqrtpd(PyObject *self, PyObject *args)
 {
@@ -325,11 +280,6 @@ static PyObject *sse_sqrtpd(PyObject *self, PyObject *args)
 }
 
 static PyMethodDef SSEMethods[] = {
-    {"set_exception_mask"  , sse_csfr_sexcmsk,     METH_VARARGS, "Set the exception mask bits of the MXCSR control and status register"},
-    {"set_exception_state" , sse_csfr_sexcst,      METH_VARARGS, "Set the exception state bits of the MXCSR control and status register"},
-    {"set_flush_zero_mode" , sse_csfr_sfzm,        METH_VARARGS, "Set the flush zero bits of the MXCSR control and status register"},
-    {"set_rounding_mode"   , sse_set_rnd_mode,     METH_VARARGS, "Set the rounding mode bits of the MXCSR control and status register to the value in unsigned 32-bit integer a"},
-    {"setcsr"              , sse_setcsr,           METH_VARARGS, "Set the MXCSR control and status register with the value in unsigned 32-bit integer a."},
     {"shuffle_pi16"        , sse_shuffle_pi16,     METH_VARARGS, "Shuffle 16-bit integers in a using the control in imm8"},
     {"sqrt_pd"             , sse_sqrtpd,           METH_VARARGS, "Compute square root of packed double-precision (64bit) floating point elements"},
     {"subs_epu8"           , sse_subsepu8,         METH_VARARGS, "Subtract 8-bit unsigned integers using saturation"},
@@ -376,34 +326,14 @@ static PyMethodDef SSEMethods[] = {
 
 static struct PyModuleDef ssemodule = {
     PyModuleDef_HEAD_INIT,
-    "pysseintrin",
+    "sseintrin",
     "Python wrapper for sse intrinsics",
     -1,
     SSEMethods
 };
 
-static struct SSEConstants constants[] = {    
-    {"_MM_ROUND_NEAREST",     "i", _MM_ROUND_NEAREST},
-    {"_MM_ROUND_DOWN",        "i", _MM_ROUND_DOWN},
-    {"_MM_ROUND_UP",          "i", _MM_ROUND_UP},
-    {"_MM_ROUND_TOWARD_ZERO", "i", _MM_ROUND_TOWARD_ZERO},
-    {"_MM_EXCEPT_INVALID",    "i", _MM_EXCEPT_INVALID,},
-    {"_MM_EXCEPT_DIV_ZERO",   "i", _MM_EXCEPT_DIV_ZERO},
-    {"_MM_EXCEPT_DENORM",     "i", _MM_EXCEPT_DENORM},
-    {"_MM_EXCEPT_OVERFLOW",   "i", _MM_EXCEPT_OVERFLOW},
-    {"_MM_EXCEPT_UNDERFLOW",  "i", _MM_EXCEPT_UNDERFLOW},
-    {"_MM_EXCEPT_INEXACT",    "i", _MM_EXCEPT_INEXACT},
-    {"_MM_MASK_INVALID",      "i", _MM_MASK_INVALID,},
-    {"_MM_MASK_DIV_ZERO",     "i", _MM_MASK_DIV_ZERO},
-    {"_MM_MASK_DENORM",       "i", _MM_MASK_DENORM},
-    {"_MM_MASK_OVERFLOW",     "i", _MM_MASK_OVERFLOW},
-    {"_MM_MASK_UNDERFLOW",    "i", _MM_MASK_UNDERFLOW},
-    {"_MM_MASK_INEXACT",      "i", _MM_MASK_INEXACT},
-    {NULL, NULL, 0}
-};
 
-PyMODINIT_FUNC PyInit_pysseintrin(void){
+PyMODINIT_FUNC PyInit_sseintrin(void){
     PyObject *module = PyModule_Create(&ssemodule);
-    addobj(module, constants);
     return module;
 }

@@ -48,20 +48,6 @@
 
 #define MAX_CNST_NM_SZ 25
 
-struct SSEConstants {
-    char *name;
-    char *type;
-    int value;
-};
-
-inline void addobj(PyObject *module, struct SSEConstants *constants)
-{ 
-    int i;
-    for (i=0; constants[i].name != NULL; i++){
-        PyModule_AddObject(module, constants[i].name,
-                                 Py_BuildValue(constants[i].type,constants[i].value));
-    }
-}
 /* Base double 128d */
 inline __m128d *sse_based128(PyObject *self, PyObject *args)
 {
