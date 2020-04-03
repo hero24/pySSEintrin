@@ -1,0 +1,6 @@
+*.so
+build/lib.win32-3.6/pysseintrin.cp36-win32.pyd
+*.o
+build/temp.win32-3.6/Release/pysseintrin.cp36-win32.exp
+*.lib
+build/temp.win32-3.6/Release/pysseintrin.obj
