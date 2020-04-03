@@ -1,3 +1,6 @@
+#ifndef __PYSSEINTRIN_H
+#define __PYSSEINTRIN_H
+
 #if defined(_MSC_VER)
 #include <intrin.h>
 #else
@@ -46,7 +49,8 @@
     free(dbp);                                    \
     return Py_BuildValue("[dd]", dv[0], dv[1]);
 
-#define MAX_CNST_NM_SZ 25
+
+#define ADD_PREFIX_METHOD(METH, PREFIX, DOCS) {#METH, PREFIX ## METH, METH_VARARGS, DOCS}
 
 /* Base double 128d */
 inline __m128d *sse_based128(PyObject *self, PyObject *args)
@@ -142,3 +146,5 @@ inline int64_t set_int64_t(__m64 num){
     converter.from = num;
     return converter.value;
 }
+
+#endif
