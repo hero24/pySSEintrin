@@ -49,6 +49,14 @@
     free(dbp);                                    \
     return Py_BuildValue("[dd]", dv[0], dv[1]);
 
+#define SPBASE(intrinsic)                                         \
+    float aa[4], ab[4], *ar;                                      \
+    if (!PyArg_ParseTuple(args, "ffffffff", A03(&aa), A03(&ab)))  \
+        return NULL;                                              \
+    __m128 a = _mm_set_ps(A03(aa)), b = _mm_set_ps(A03(ab)), r;   \
+    r = intrinsic(a, b);                                          \
+    ar = (float *) &r;                                            \
+    return Py_BuildValue("[ffff]", A03(ar));                 
 
 #define ADD_PREFIX_METHOD(METH, PREFIX, DOCS) {#METH, PREFIX ## METH, METH_VARARGS, DOCS}
 

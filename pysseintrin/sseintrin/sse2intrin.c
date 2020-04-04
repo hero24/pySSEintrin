@@ -249,19 +249,16 @@ static PyMethodDef SSE2Methods[] = {
     ADD_SSE2_METHOD( cmpgt_epi16      , "Compare packed 16-bit integers in a and b for greater than"),
     ADD_SSE2_METHOD( cmpgt_epi32      , "Compare packed 32-bit integers in a and b for greater than"),
     ADD_SSE2_METHOD( cmpgt_epi8       , "Compare packed 8-bit integers in a and b for greater than"),
-    
     ADD_SSE2_METHOD( sqrt_pd          , "Compute square root of packed double-precision (64bit) floating point elements"),
     ADD_SSE2_METHOD( subs_epu8        , "Subtract 8-bit unsigned integers using saturation"),
     ADD_SSE2_METHOD( subs_epu16       , "Subtract 16-bit unsigned integers using saturation"),
     ADD_SSE2_METHOD( subs_epi8        , "Subtract 8-bit integers using saturation"),
     ADD_SSE2_METHOD( subs_epi16       , "Subtract 16-bit integers using saturation"),
-
     ADD_SSE2_METHOD( sub_si64         , "Subtract 64-bit integers a and b"),
     ADD_SSE2_METHOD( sub_epi64        , "Subtract packed 64-bit integers in a and b"),
     ADD_SSE2_METHOD( sub_epi32        , "Subtract packed 32-bit integers in a and b"),
     ADD_SSE2_METHOD( sub_epi16        , "Subtract packed 16-bit integers in a and b"),
     ADD_SSE2_METHOD( sub_epi8         , "Subtract packed 8-bit integers in a and b"),
-
     {NULL, NULL, 0, NULL}
 };
 
