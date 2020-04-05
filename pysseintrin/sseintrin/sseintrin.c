@@ -20,15 +20,16 @@ static PyObject *sse_addss(PyObject *self, PyObject *args)
 }
 
 /* And */
-#define andps_docstring "Compute the bitwise AND of packed single-precision (32-bit) \
+#define andps_docstring "Compute the bitwise AND of packed single-precision \
 floating-point elements in a and b, and return the results."
 static PyObject *sse_andps(PyObject *self, PyObject *args)
 {
     SPBASE(_mm_and_ps)
 }
 
-#define andnot_ps_docstring "Compute the bitwise NOT of packed single-precision (32-bit) \
-floating-point elements in a and b, and return the results."
+#define andnot_ps_docstring "Compute the bitwise NOT of packed  \
+single-precision floating-point elements in a and b, and return \
+the results."
 static PyObject *sse_andnot_ps(PyObject *self, PyObject *args)
 {
     SPBASE(_mm_andnot_ps)
@@ -56,7 +57,8 @@ static PyObject *sse_avgpu8(PyObject *self, PyObject *args)
 {
     int8_t aa[8], ab[8], *ar;
     __m64 a, b, r;
-    if(!PyArg_ParseTuple(args, "iiiiiiiiiiiiiiii", A03(&aa), A47(&aa), A03(&ab), A47(&ab)))
+    if(!PyArg_ParseTuple(args, "iiiiiiiiiiiiiiii", 
+                         A03(&aa), A47(&aa), A03(&ab), A47(&ab)))
         return NULL;
     a = _mm_set_pi8(A03(aa), A47(aa));
     b = _mm_set_pi8(A03(ab), A47(ab));
@@ -271,20 +273,80 @@ static PyObject *sse_cmpunord_ss(PyObject *self, PyObject *args)
     SPBASE(_mm_cmpunord_ss)
 }
 
-/* shuffle */
-#define SHUFFLE_PI16_BASE(num) case num: \
-      r = _mm_shuffle_pi16(a, num); \
-      break
+/* divide */
+#define divps_docstring "Divide packed single-precision   \
+floating-point elements in a by packed elements in b, and \
+store the results"
+static PyObject *sse_divps(PyObject *self, PyObject *args)
+{
+    SPBASE(_mm_div_ps)
+}
 
-#define SHUFFLE_PI16_2(num) SHUFFLE_PI16_BASE(num); SHUFFLE_PI16_BASE(num+1)
-#define SHUFFLE_PI16_5(num) SHUFFLE_PI16_2(num); SHUFFLE_PI16_2(num+2); SHUFFLE_PI16_BASE(num+4)
-#define SHUFFLE_PI16_10(num) SHUFFLE_PI16_5(num); SHUFFLE_PI16_5(num+5)
-#define SHUFFLE_PI16_25(num) SHUFFLE_PI16_10(num); SHUFFLE_PI16_10(num+10); SHUFFLE_PI16_5(num+20)
-#define SHUFFLE_PI16_50(num) SHUFFLE_PI16_25(num); SHUFFLE_PI16_25(num+25)
-#define SHUFFLE_PI16_100(num) SHUFFLE_PI16_50(num); SHUFFLE_PI16_50(num+50)
-#define SHUFFLE_PI16_200(num) SHUFFLE_PI16_100(num); SHUFFLE_PI16_100(num+100)
+#define divss_docstring "Divide the lower single-precision \
+floating-point element in a by the lower single-precision  \
+floating-point element in b, store the result in the lower \
+element of dst, and copy the upper 3 packed elements from a\
+to the upper elements of return"
+static PyObject *sse_divss(PyObject *self, PyObject *args)
+{
+    SPBASE(_mm_div_ss)
+}
 
-#define shuffle_pi16_docstring "Shuffle 16-bit integers in a using the control in imm8"
+/* handle imm8 */
+#define IMM8_CASE_BASE(num, intrinsic)  \
+        case num:                       \
+          r = intrinsic(a, num); \
+          break
+
+#define IMM8_CASE_2(num, intrinsic) IMM8_CASE_BASE(num, intrinsic); \
+                                    IMM8_CASE_BASE(num+1, intrinsic)
+
+#define IMM8_CASE_5(num, intrinsic) IMM8_CASE_2(num, intrinsic);     \
+                                     IMM8_CASE_2(num+2, intrinsic);  \
+                                     IMM8_CASE_BASE(num+4, intrinsic)
+
+#define IMM8_CASE_10(num, intrinsic) IMM8_CASE_5(num, intrinsic); \
+                                     IMM8_CASE_5(num+5, intrinsic)
+
+#define IMM8_CASE_25(num, intrinsic) IMM8_CASE_10(num, intrinsic);     \
+                                     IMM8_CASE_10(num+10, intrinsic); \
+                                     IMM8_CASE_5(num+20, intrinsic)
+
+#define IMM8_CASE_50(num, intrinsic) IMM8_CASE_25(num, intrinsic);  \
+                                     IMM8_CASE_25(num+25, intrinsic)
+
+#define IMM8_CASE_100(num, intrinsic) IMM8_CASE_50(num, intrinsic);  \
+                                      IMM8_CASE_50(num+50, intrinsic)
+
+#define IMM8_CASE_200(num, intrinsic) IMM8_CASE_100(num, intrinsic);   \
+                                      IMM8_CASE_100(num+100, intrinsic)
+
+#define IMM8_CASE_UINT8T(intrinsic) IMM8_CASE_200(0, intrinsic);   \
+                                    IMM8_CASE_50(200, intrinsic);  \
+                                    IMM8_CASE_5(250, intrinsic);   \
+                                    IMM8_CASE_BASE(255, intrinsic)
+/* extract_pi16 */
+#define extract_pi16_docstring "Extract a 16-bit integer from a, selected \
+with imm8, and store the result in the lower element of dst."
+static PyObject *sse_extract_pi16(PyObject *self, PyObject *args)
+{
+    int16_t x[4]; uint8_t imm8; int r;
+    if(!PyArg_ParseTuple(args, "iiiii", A03(&x), &imm8))
+        return NULL;
+    if (imm8 > 3)
+        imm8 = imm8 % 4;
+    __m64 a = _mm_set_pi16(A03(x));
+    switch (imm8){
+            IMM8_CASE_2(0, _mm_extract_pi16);
+            IMM8_CASE_2(2, _mm_extract_pi16);
+    }
+    _mm_empty();
+    return Py_BuildValue("i", r);
+}
+
+/* shuffle_pi16 */
+#define shuffle_pi16_docstring "Shuffle 16-bit integers in a using \
+the control in imm8"
 static PyObject *sse_shuffle_pi16(PyObject *self, PyObject *args)
 {
     int16_t x[4], *ar; uint8_t imm8;
@@ -292,9 +354,7 @@ static PyObject *sse_shuffle_pi16(PyObject *self, PyObject *args)
         return NULL;
     __m64 a = _mm_set_pi16(A03(x)), r;
     switch(imm8){
-            SHUFFLE_PI16_200(0);
-            SHUFFLE_PI16_50(200);
-            SHUFFLE_PI16_5(250);
+            IMM8_CASE_UINT8T(_mm_shuffle_pi16);
     }
     ar = (int16_t *) &r;
     _mm_empty();
@@ -333,6 +393,9 @@ static PyMethodDef SSEMethods[] = {
     ADD_SSE_METHOD(cmpord_ss),
     ADD_SSE_METHOD(cmpunord_ss),
     ADD_SSE_METHOD(cmpunord_ps),
+    ADD_SSE_METHOD(divps),
+    ADD_SSE_METHOD(divss),
+    ADD_SSE_METHOD(extract_pi16),
     ADD_SSE_METHOD(shuffle_pi16),
     {NULL, NULL, 0, NULL}
 };
