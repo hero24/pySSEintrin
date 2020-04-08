@@ -58,6 +58,33 @@
     ar = (float *) &r;                                            \
     return Py_BuildValue("[ffff]", A03(ar));                 
 
+#define RBOOL_SPBASE(intrinsic)                                   \
+    float aa[4], ab[4]; int r;                                    \
+    if (!PyArg_ParseTuple(args, "ffffffff", A03(&aa), A03(&ab)))  \
+        return NULL;                                              \
+    __m128 a = _mm_set_ps(A03(aa)), b = _mm_set_ps(A03(ab));      \
+    r = intrinsic(a, b);                                          \
+    return Py_BuildValue("O", r ? Py_True : Py_False);    
+
+#define SINGLE128_SPBASE(intrinsic)                               \
+    float aa[4], *ar;                                             \
+    if (!PyArg_ParseTuple(args, "ffff", A03(&aa)))                \
+        return NULL;                                              \
+    __m128 a = _mm_set_ps(A03(aa)), r;                            \
+    r = intrinsic(a);                                             \
+    ar = (float *) &r;                                            \
+    return Py_BuildValue("[ffff]", A03(ar));       
+
+#define M64_BASE_M64M64(intrinsic)                                   \
+    int16_t aa[4], ab[4], *ar;                                     \
+    if(!PyArg_ParseTuple(args, "iiiiiiii", A03(&aa), A03(&ab)))    \
+        return NULL;                                               \
+    __m64 a = _mm_set_pi16(A03(aa)), b = _mm_set_pi16(A03(ab)), r; \
+    r = intrinsic(a, b);                                           \
+    ar = (int16_t *) &r;                                           \
+    _mm_empty();                                                   \
+    return Py_BuildValue("[iiii]", A03(ar));                       \
+
 #define ADD_PREFIX_METHOD(METH, PREFIX, DOCS) {#METH, PREFIX ## METH, METH_VARARGS, DOCS}
 
 /* Base double 128d */
