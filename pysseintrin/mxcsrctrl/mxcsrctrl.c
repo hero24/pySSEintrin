@@ -1,11 +1,28 @@
 #include "mxcsrctrl.h"
 
 static PyMethodDef mxcrtlmethods[] = {
-    {"set_exception_mask"  , sse_csfr_sexcmsk,     METH_VARARGS, "Set the exception mask bits of the MXCSR control and status register"},
-    {"set_exception_state" , sse_csfr_sexcst,      METH_VARARGS, "Set the exception state bits of the MXCSR control and status register"},
-    {"set_flush_zero_mode" , sse_csfr_sfzm,        METH_VARARGS, "Set the flush zero bits of the MXCSR control and status register"},
-    {"set_rounding_mode"   , sse_set_rnd_mode,     METH_VARARGS, "Set the rounding mode bits of the MXCSR control and status register to the value in unsigned 32-bit integer a"},
-    {"setcsr"              , sse_setcsr,           METH_VARARGS, "Set the MXCSR control and status register with the value in unsigned 32-bit integer a."},
+    {"set_exception_mask"  , sse_csfr_sexcmsk,     METH_VARARGS,
+     "Set the exception mask bits of the MXCSR control and status register"},
+    {"set_exception_state" , sse_csfr_sexcst,      METH_VARARGS,
+     "Set the exception state bits of the MXCSR control and status register"},
+    {"set_flush_zero_mode" , sse_csfr_sfzm,        METH_VARARGS,
+     "Set the flush zero bits of the MXCSR control and status register"},
+    {"set_rounding_mode"   , sse_set_rnd_mode,     METH_VARARGS,
+     "Set the rounding mode bits of the MXCSR control and status \
+     register to the value in unsigned 32-bit integer a"},
+    {"setcsr"              , sse_setcsr,           METH_VARARGS,
+     "Set the MXCSR control and status register with the value in \
+     unsigned 32-bit integer a."},
+    {"getcsr"              , sse_getcsr,           METH_NOARGS,
+     "Get the unsigned 32bit value of the MXCSR control and status register."},
+    {"get_rounding_mode"   , sse_get_rnd_mnd,      METH_NOARGS,
+     "Get the rounding mode bits of the MXCSR control and status register"},
+    {"get_flush_zero_mode" , sse_get_fzmm,         METH_NOARGS,
+     "Get the flush zero bits of the MXCSR control and status register"},
+    {"get_exception_state" , sse_get_exst,         METH_NOARGS, 
+     "Get the exception state bits of the MXCSR control and status register"},
+    {"get_exception_mask"  , sse_get_exmsk,        METH_NOARGS,
+     "Get the exception mask bits of the MXCSR control and status register"},
     {NULL, NULL, 0, NULL}
 };
 
