@@ -75,7 +75,7 @@
     ar = (float *) &r;                                            \
     return Py_BuildValue("[ffff]", A03(ar));       
 
-#define M64_BASE_M64M64(intrinsic)                                   \
+#define M64_BASE_M64M64(intrinsic)                                 \
     int16_t aa[4], ab[4], *ar;                                     \
     if(!PyArg_ParseTuple(args, "iiiiiiii", A03(&aa), A03(&ab)))    \
         return NULL;                                               \

@@ -431,8 +431,22 @@ SSE_METH(maxps)
 {
     SPBASE(_mm_max_ps);
 }
-/*_mm_max_pu8 (__m64 a, __m64 b)
-*/
+
+#define maxpu8_docstring "Compare packed unsigned 8-bit integers in a and b, \
+and store packed maximum values in dst."
+SSE_METH(maxpu8)
+{
+    int8_t aa[8], ab[8], *ar; __m64 r;
+    if(!PyArg_ParseTuple(args, "iiiiiiiiiiiiiiii",
+                         A03(&aa), A47(&aa), A03(&ab), A47(&ab)))
+        return NULL;
+    __m64 a = _mm_set_pi8(A03(aa), A47(aa)), b = _mm_set_pi8(A03(ab), A47(ab));
+    r = _mm_max_pu8(a, b);                                           
+    ar = (int8_t *) &r;                                           
+    _mm_empty();                                                   
+    return Py_BuildValue("[iiiiiiii]", A03(ar), A47(ar));                       
+}
+
 #define maxss_docstring "Compare the lower single-precision floating-point \
 elements in a and b, store the maximum value in the lower element of dst,  \
 and copy the upper 3 packed elements from a to the upper element of return"
@@ -453,6 +467,22 @@ SSE_METH(minps)
 {
     SPBASE(_mm_min_ps);
 }
+
+#define minpu8_docstring "Compare packed unsigned 8-bit integers in a and b, \
+and store packed minimum values in dst."
+SSE_METH(minpu8)
+{
+    int8_t aa[8], ab[8], *ar; __m64 r;
+    if(!PyArg_ParseTuple(args, "iiiiiiiiiiiiiiii",
+                         A03(&aa), A47(&aa), A03(&ab), A47(&ab)))
+        return NULL;
+    __m64 a = _mm_set_pi8(A03(aa), A47(aa)), b = _mm_set_pi8(A03(ab), A47(ab));
+    r = _mm_min_pu8(a, b);                                           
+    ar = (int8_t *) &r;                                           
+    _mm_empty();                                                   
+    return Py_BuildValue("[iiiiiiii]", A03(ar), A47(ar));                       
+}
+
 
 #define minss_docstring "Compare the lower single-precision floating-point \
 elements in a and b, store the minimum value in the lower element of dst,  \
@@ -705,8 +735,10 @@ static PyMethodDef SSEMethods[] = {
     ADD_SSE_METHOD(insert_pi16),
     ADD_SSE_METHOD(max_pi16),
     ADD_SSE_METHOD(maxps),
+    ADD_SSE_METHOD(maxpu8),
     ADD_SSE_METHOD(maxss),
     ADD_SSE_METHOD(minps),
+    ADD_SSE_METHOD(minpu8),
     ADD_SSE_METHOD(minss),
     ADD_SSE_METHOD(min_pi16),
     ADD_SSE_METHOD(movess),
